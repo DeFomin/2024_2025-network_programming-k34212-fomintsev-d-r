@@ -94,11 +94,11 @@ AllowedIPs = 10.0.0.2/32
 
 ### <a name="section4.5">Тесты</a> 
 
-* Клиент -> Сервер
+* Сервер -> Клиент
 
 <p align="center"><img src="https://github.com/user-attachments/assets/ed37ab42-33f8-4657-bb51-5ec3fa00e9fb" width=700></p>
 
-* Сервер -> Клиент
+* Клиент -> Сервер
 
 <p align="center"><img src="https://github.com/user-attachments/assets/0b94a495-7f78-4fa9-9972-122186107f98" width=700></p>
 
