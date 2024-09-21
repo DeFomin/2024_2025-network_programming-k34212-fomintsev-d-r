@@ -15,6 +15,10 @@ Date of finished: 21.09.2024
 - [Ход работы](#section4)
   - [Selectl VDS](#section4.1)
   - [VirtualBox и CHR (RouterOS)](#section4.2)
+  - [Создание интерфейса Wireguard на RouterOS](#section4.3)
+  - [Создание интерфейса Wireguard на Selectl VDS](#section4.4)
+  - [Тесты](#section4.5)
+- [Вывод](#section4.6)
 
 ## <a name="section1">Описание</a>
 Данная работа предусматривает обучение развертыванию виртуальных машин (VM) и системы контроля конфигураций Ansible а также организации собственных VPN серверов.
@@ -46,9 +50,63 @@ CHR (Cloud Hosted Router) от MikroTik — это виртуальная вер
 
 <p align="center"><img src="https://github.com/user-attachments/assets/36ec8770-12f0-4da4-8417-2ce7e3e23131" width=700></p>
 
-<p align="center"><img src="" width=700></p>
+### <a name="section4.3">Создание интерфейса Wireguard на RouterOS (клиент)</a> 
 
-<p align="center"><img src="" width=700></p>
+В старших версиях RouterOS уже есть встроенный Wireguard интерфейс, поэтому включаем его и настраиваем (ключи автоматически генерируются).
+
+<p align="center"><img src="https://github.com/user-attachments/assets/1f7a871d-648e-4f65-a511-a6b85208cd53" width=700></p>
+
+Кроме самого интерфейса важно указать peer с endpoint ip, портом нашего сервера и публичным ключом, который будет сгенерирован на сервере
+
+<p align="center"><img src="https://github.com/user-attachments/assets/1bccea63-092e-4168-8b6d-fdf5e9bed3f2" width=700></p>
+
+### <a name="section4.4">Создание интерфейса Wireguard на Selectl VDS (сервер)</a> 
+
+На самом сервере создаем пару ключей
+
+```bash
+/etc/wireguard/
+wg genkey > privatekey
+wg pubkey < privatekey > publickey
+```
+А также создадим конфигурационный файл, с интерфейсом, в котором укажем приватный ключ сервера, IP из той же подсети и peer, в котором будет публичный ключ клиента и его ip 
+
+```bash
+root@my-serv-spb:~# cat /etc/wireguard/wg0.conf 
+[Interface]
+
+PrivateKey = EDY9niad14YAoKrj8Dr6LexrcglpsHDubtmm5Gy+/GQ=
+Address = 10.0.0.1/24
+ListenPort = 51820
+PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+
+[Peer]
+
+PublicKey = yQr5zsil3vtV0T+Yh+eUpX0Jli8OlJY9RXellkCDlSE=
+AllowedIPs = 10.0.0.2/32
+```
+
+Команды PostUp и PostDown используются для автоматической настройки правил iptables при поднятии (up) и опускании (down) WireGuard-интерфейса. 
+
+<p align="center"><img src="https://github.com/user-attachments/assets/55506bf2-6fdf-42af-8c64-e5080c7ec318" width=700></p>
+
+### <a name="section4.5">Тесты</a> 
+
+* Клиент -> Сервер
+
+<p align="center"><img src="https://github.com/user-attachments/assets/ed37ab42-33f8-4657-bb51-5ec3fa00e9fb" width=700></p>
+
+* Сервер -> Клиент
+
+<p align="center"><img src="https://github.com/user-attachments/assets/0b94a495-7f78-4fa9-9972-122186107f98" width=700></p>
+
+## <a name="section4.6">Вывод</a> 
+
+В ходе выполнения данной лабораторной работы был поднят сервер на платформе Selectl VDS, на нем установлены система контроля конфигураций Ansible и python, также была поднята ВМ с CHR в VirtualBox. В данных устройствах был поднят Wireguard интерфейс и настроен тоннель между ними.
+
+
+
 
 
 
