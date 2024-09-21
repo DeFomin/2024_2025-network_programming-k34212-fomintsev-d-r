@@ -56,9 +56,13 @@ CHR (Cloud Hosted Router) от MikroTik — это виртуальная вер
 
 <p align="center"><img src="https://github.com/user-attachments/assets/1f7a871d-648e-4f65-a511-a6b85208cd53" width=700></p>
 
+<p align="center"><img src="https://github.com/user-attachments/assets/3ec1c35a-3aa6-4caa-b347-31ffd2a8f58d" width=700></p>
+
 Кроме самого интерфейса важно указать peer с endpoint ip, портом нашего сервера и публичным ключом, который будет сгенерирован на сервере
 
-<p align="center"><img src="https://github.com/user-attachments/assets/1bccea63-092e-4168-8b6d-fdf5e9bed3f2" width=700></p>
+<p align="center"><img src="https://github.com/user-attachments/assets/e6b91f4a-e886-47a8-95e4-ccec982db16c" width=700></p>
+
+На стороне клиента параметр AllowedIPs указывает, какие IP-адреса будут отправляться через туннель WireGuard. Это фактически определяет маршруты, по которым трафик клиента будет передаваться через туннель.
 
 ### <a name="section4.4">Создание интерфейса Wireguard на Selectl VDS (сервер)</a> 
 
@@ -84,7 +88,7 @@ ListenPort = 51820
 PublicKey = yQr5zsil3vtV0T+Yh+eUpX0Jli8OlJY9RXellkCDlSE=
 AllowedIPs = 10.0.0.2/32
 ```
-
+На стороне сервера AllowedIPs указывает, какие IP-адреса могут быть связаны с конкретным клиентом (пиром).
 
 <p align="center"><img src="https://github.com/user-attachments/assets/55506bf2-6fdf-42af-8c64-e5080c7ec318" width=700></p>
 
