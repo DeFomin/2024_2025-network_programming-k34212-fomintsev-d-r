@@ -78,8 +78,6 @@ root@my-serv-spb:~# cat /etc/wireguard/wg0.conf
 PrivateKey = EDY9niad14YAoKrj8Dr6LexrcglpsHDubtmm5Gy+/GQ=
 Address = 10.0.0.1/24
 ListenPort = 51820
-PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
 
 [Peer]
 
@@ -87,7 +85,6 @@ PublicKey = yQr5zsil3vtV0T+Yh+eUpX0Jli8OlJY9RXellkCDlSE=
 AllowedIPs = 10.0.0.2/32
 ```
 
-Команды PostUp и PostDown используются для автоматической настройки правил iptables при поднятии (up) и опускании (down) WireGuard-интерфейса. 
 
 <p align="center"><img src="https://github.com/user-attachments/assets/55506bf2-6fdf-42af-8c64-e5080c7ec318" width=700></p>
 
