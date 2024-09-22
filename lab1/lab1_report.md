@@ -98,9 +98,19 @@ AllowedIPs = 10.0.0.2/32
 
 <p align="center"><img src="https://github.com/user-attachments/assets/ed37ab42-33f8-4657-bb51-5ec3fa00e9fb" width=700></p>
 
+* Проверка интернет соединения
+
+<p align="center"><img src="https://github.com/user-attachments/assets/e4838e83-7b6d-4a7f-98fc-7a98b66799ee" width=700></p>
+
+
 * Клиент -> Сервер
 
 <p align="center"><img src="https://github.com/user-attachments/assets/0b94a495-7f78-4fa9-9972-122186107f98" width=700></p>
+
+* Проверка интернет соединения
+
+<p align="center"><img src="https://github.com/user-attachments/assets/e10e9d88-3a71-4d8d-b006-d661ac8da27e" width=700></p>
+
 
 ## <a name="section4.6">Вывод</a> 
 
