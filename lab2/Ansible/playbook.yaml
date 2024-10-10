@@ -1,0 +1,43 @@
+---
+- name: Configure CHR routers
+  hosts: mikrotik
+  gather_facts: no
+  tasks:
+    - name: Set login and password
+      community.routeros.routeros_command:
+        commands:
+          - /user set admin password=NEW_PASSWORD
+      vars:
+        NEW_PASSWORD: "QWERTY"
+
+    - name: Configure NTP client
+      community.routeros.routeros_command:
+        commands:
+          - /system ntp client set enabled=yes primary-ntp=216.239.35.0 secondary-ntp=216.239.35.4
+
+    - name: Configure OSPF with Router ID
+      community.routeros.routeros_command:
+        commands:
+          - /routing ospf instance set [find] router-id={{ router_id }}
+      vars:
+        router_id: "{{ ansible_host }}"
+
+    - name: Gather OSPF topology
+      community.routeros.routeros_command:
+        commands:
+          - /routing ospf neighbor print
+        register: ospf_topology_output
+
+    - name: Print OSPF topology
+      debug:
+        msg: "{{ ospf_topology_output.stdout_lines }}"
+
+    - name: Full device configuration
+      community.routeros.routeros_command:
+        commands:
+          - /export
+        register: full_config
+
+    - name: Print full configuration
+      debug:
+        msg: "{{ full_config.stdout_lines }}"
