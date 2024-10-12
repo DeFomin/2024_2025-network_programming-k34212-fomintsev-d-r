@@ -1,0 +1,32 @@
+---
+- name: Setup MikroTik CHR
+  hosts: mikrotik
+  gather_facts: no
+  tasks:
+    # Настройка логина и пароля
+    - name: Set admin login credentials
+      community.routeros.command:
+        commands:
+          - /user set admin password="QWERTY"
+      register: user_verify
+      ignore_errors: no
+
+    - name: Verify Сhanges
+      ansible.builtin.debug:
+        msg: "Ну есть жеееее, работает"
+
+    - name: Show user change result
+      ansible.builtin.debug:
+        msg: |
+          "Порядки меняются, пароль запривачен {{ inventory_hostname }}:{{ user_verify }}"
+
+    # Настройка NTP-клиента
+    - name: Configure NTP Client
+      community.routeros.command:
+        commands:
+          - /system ntp client set enabled=yes mode=unicast
+          - /system ntp client servers add address=216.239.35.4
+          - /system ntp client servers add address=216.239.35.8  # google NTP servers
+          - /system ntp client print
+      register: ntp_result
+      ignore_errors: no

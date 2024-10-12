@@ -60,19 +60,155 @@ Date of finished: 06.10.2024
 
 Можно явно заметить, что все устройства находятся в одной локальной сети, можно разрешить работу с различными подсетями, настроив маршрутизацию между подсетями.
 
-```
+```bash
 iptables -A FORWARD -s 10.0.0.0/24 -d 10.2.0.0/24 -j ACCEPT
 iptables -A FORWARD -s 10.2.0.0/24 -d 10.0.0.0/24 -j ACCEPT
 ```
 ### <a name="section3.2">Работа с Ansible</a>
 
-1. Создадим файл инвентаря inventory  
-   Это файл, который определяет список устройств.
-<p align="center"><img src="./Work_Img/223000000.png" width=700></p>
+Ansible по умолчанию использует SSH для подключения к удалённым хостам, и WireGuard в данном случае выполняет роль защищённого канала, через который осуществляется SSH-подключение.
 
-1. Создадим playbook
-   Это основной файл, где описаны задачи.
+Поэтому настроим ключи, чтобы не возникало проблем с паролями
 
+<p align="center"><img src="./Work_Img/134000000.png" width=700></p>
+
+*Имя файла и расширение задано вручную, так как не удалось это сделать с помощью scp
+
+Импортируем публичный ключ сервера и проверяем, что теперь пароль не обязателен
+
+<p align="center"><img src="./Work_Img/551000000.png" width=700></p>
+
+<p align="center"><img src="./Work_Img/899000000.png" width=700></p>
+
+(Аналогично для CHR-V2)
+
+1. Создадим файл hosts в дириктории inventory (в последствии будет обновлен)
+
+Это файл, который определяет список устройств.
+
+<p align="center"><img src="./Work_Img/388000000.png" width=700></p>
+
+* ansible_connection=network_cli указывает, что подключение подходит для сетевых устройств, таких как маршрутизаторы и коммутаторы.
+
+* ansible_network_os=routeros определяет операционную систему устройства как RouterOS
+
+* ansible_ssh_private_key_file=~/.ssh/id_rsa указывает путь к приватному ключу SSH, который используется для аутентификации на MikroTik
+
+2. Также создадим конфигурационный файл ansible.cfg
+
+<p align="center"><img src="./Work_Img/588000000.png" width=700></p>
+
+Настройки в ansible.cfg применяются ко всем хостам, если они не переопределены в файле hosts. В файле hosts можно указать конкретные параметры для отдельных хостов, чтобы иметь больше контроля над подключениями
+
+Теперь можно проверь связь с помощью команды 
+
+```bash
+ansible -i ./inventory/hosts mikrotik -m ping
+```
+
+<p align="center"><img src="./Work_Img/354000000.png" width=700></p>
+
+3. Создадим playbook
+
+Это основной файл, где описаны задачи.  
+
+Как минимум, каждый play определяет две вещи:
+- управляемые узлы для нацеливания 
+- используя шаблон по крайней мере одна задача для выполнения
+
+В данном случае нам необходимо использовать коллекцию community.routeros, она идеально подходит к нашему заданию
+
+Исходя из рекомендаций https://github.com/ansible-collections/community.routeros
+
+Немного правим наш файл hosts на итоговый рабочий вариант
+
+<p align="center"><img src="./Work_Img/206000000.png" width=700></p>
+
+Также нам понадобится предварительно установить ansible-pylibssh (библиотека для Ansible, которая предоставляет интерфейс для работы с SSH-соединениями, используя библиотеку libssh)
+**Или** же Paramiko, другую популярную библиотеку для работы с SSH в Ansible.
+
+```bash
+pip install ansible-pylibssh
+```
+
+<details>
+<summary><b>Тестовый сценарий модуля community.routeros</b></summary>
+
+```yaml
+---
+- name: RouterOS test with network_cli connection
+  hosts: mikrotik
+  gather_facts: false
+  tasks:
+    - name: Run a command
+      community.routeros.command:
+        commands:
+          - /system resource print
+      register: system_resource_print
+    - name: Print its output
+      ansible.builtin.debug:
+        var: system_resource_print.stdout_lines
+
+    - name: Retrieve facts
+      community.routeros.facts:
+    - ansible.builtin.debug:
+        msg: "First IP address: {{ ansible_net_all_ipv4_addresses[0] }}"
+```
+</details>
+Он был выполнен удачно:
+* Выведена информация о системных ресурсах обоих RouterOS;
+* Собраны факты об устройстве, такие как версия RouterOS, IP-адреса и другие параметры.
+
+<p align="center"><img src="./Work_Img/973000000.png" width=700></p>
+
+Теперь обновим этот шаблон под наши задачи: сменим пароль (логин менять не стал, тк не удобно), добавим NTP Client 
 
 NTP (Network Time Protocol) — это протокол для синхронизации времени на компьютерах и сетевых устройствах. Он позволяет устройствам в сети поддерживать точное время, получая его от специализированных NTP-серверов.
+
+```yaml
+---
+- name: Setup MikroTik CHR
+  hosts: mikrotik
+  gather_facts: no
+  tasks:
+    # Настройка логина и пароля
+    - name: Set admin login credentials
+      community.routeros.command:
+        commands:
+          - /user set admin password="QWERTY"
+      register: user_verify
+      ignore_errors: no
+
+    - name: Verify Сhanges
+      ansible.builtin.debug:
+        msg: "Ну есть жеееее, работает"
+
+    - name: Show user change result
+      ansible.builtin.debug:
+        msg: |
+          "Порядки меняются, пароль запривачен {{ inventory_hostname }}:{{ user_verify }}"
+
+    # Настройка NTP-клиента
+    - name: Configure NTP Client
+      community.routeros.command:
+        commands:
+          - /system ntp client set enabled=yes mode=unicast
+          - /system ntp client servers add address=216.239.35.4
+          - /system ntp client servers add address=216.239.35.8  # google NTP servers
+          - /system ntp client print
+      register: ntp_result
+      ignore_errors: no
+```
+
+<p align="center"><img src="./Work_Img/095000000.png" width=700></p>
+
+<p align="center"><img src="./Work_Img/509000000.png" width=700></p>
+
+Далее обновим сценарий, добавим OSPF с указанием Router ID и соберем данные по OSPF топологии и полный конфиг устройства.
+
+....
+
 ## <a name="section4.6">Вывод</a> 
+
+
+....
