@@ -6,7 +6,7 @@ Group: K34212
 Author: Denis Fomintsev  
 Lab: Lab2  
 Date of create: 06.10.2024  
-Date of finished: 06.10.2024  
+Date of finished: 13.10.2024  
 
 ## Лабораторная работа №2 "Развертывание дополнительного CHR, первый сценарий Ansible"
 
@@ -219,16 +219,16 @@ OSPF — это протокол внутреннего шлюза (IGP), пре
 <p align="center"><img src="./Work_Img/468000000.png" width=700></p>
 
 ```yaml
-- name: Configure OSPF with specific Router ID for each CHR
-  community.routeros.command:
-    commands:
-      - /ip address add address={{ router_id }} interface=lo
-      - /routing ospf instance add disabled=no name=skynet router-id={{ router_id }} redistribute=connected,static
-      - /routing ospf area add disabled=no instance=skynet name=backbone
-      - /routing ospf interface-template add area=backbone cost=100 disabled=no type=ptp interfaces={{ router_int }}
-  vars:
-    router_id: "{{ '1.1.1.1' if ansible_host == '10.0.0.2' else '3.3.3.3' }}"
-    router_int: "{{ 'wg2' if ansible_host == '10.0.0.2' else 'wg0' }}"
+  - name: Configure OSPF with specific Router ID for each CHR
+    community.routeros.command:
+      commands:
+        - /ip address add address={{ router_id }} interface=lo
+        - /routing ospf instance add disabled=no name=skynet router-id={{ router_id }} redistribute=connected,static
+        - /routing ospf area add disabled=no instance=skynet name=backbone
+        - /routing ospf interface-template add area=backbone cost=100 disabled=no type=ptp interfaces={{ router_int }}
+    vars:
+      router_id: "{{ '1.1.1.1' if ansible_host == '10.0.0.2' else '3.3.3.3' }}"
+      router_int: "{{ 'wg2' if ansible_host == '10.0.0.2' else 'wg0' }}"
 
 - name: OSPF topology data
   community.routeros.command:
@@ -239,11 +239,20 @@ OSPF — это протокол внутреннего шлюза (IGP), пре
       - /routing/ospf/instance/print
   register: ospf_data
 
-- name: Get full device configuration
-  community.routeros.command:
-    commands:
-      - /export
-  register: full_config
+  - name: Get full device configuration
+    community.routeros.command:
+      commands:
+        - /export
+    register: full_config
+
+  - name: Print OSPF data
+    ansible.builtin.debug:
+      var: ospf_data
+
+  - name: Print full device configuration
+    ansible.builtin.debug:
+      var: full_config
+
 ```
 
 
