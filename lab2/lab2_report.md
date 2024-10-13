@@ -17,7 +17,9 @@ Date of finished: 06.10.2024
 - [Ход работы](#section3)
   - [Подготовка второго CHR устройств](#section3.1)
   - [Работа с Ansible](#section3.2)
-- [Вывод](#section6)
+  - [Выполнение playbook.yaml](#section3.4)
+  - [Результат](#section3.3)
+- [Вывод](#section4)
 
 ## <a name="section1">Описание</a>
 В данной лабораторной работе вы на практике ознакомитесь с системой управления конфигурацией Ansible, использующаяся для автоматизации настройки и развертывания программного обеспечения.  
@@ -204,11 +206,71 @@ NTP (Network Time Protocol) — это протокол для синхрони�
 
 <p align="center"><img src="./Work_Img/509000000.png" width=700></p>
 
-Далее обновим сценарий, добавим OSPF с указанием Router ID и соберем данные по OSPF топологии и полный конфиг устройства.
+Далее обновим сценарий, добавим OSPF с указанием Router ID и соберем данные по OSPF топологии и полный конфиг устройств.
 
-....
+OSPF — это протокол внутреннего шлюза (IGP), предназначенный для распространения информации о маршрутизации между маршрутизаторами, принадлежащими одной автономной системе (AS).
 
-## <a name="section4.6">Вывод</a> 
+В MikroTik RouterOS используется для добавления сетевого интерфейса в определенную зону OSPF area=backbone: Указывает, что сетевой интерфейс должен быть добавлен в OSPF-зону, которая называется "backbone" (главная зона OSPF с идентификатором 0.0.0.0). 
+Зона OSPF (Area) - это логическая группа устройств OSPF внутри автономной системы (AS). OSPF разделяет сеть на зоны, и каждый маршрутизатор в зоне знает о всех маршрутах внутри этой зоны.
 
 
-....
+**!Чтобы настройки OSPF работали, необходимо обновить конфигурацию сетевых интерфейсов wireguard, добавив в Allowed Adresses мультикаст адрес 224.0.0.5/32, а также адрес Router-Id loopback интерфейса!**
+
+<p align="center"><img src="./Work_Img/468000000.png" width=700></p>
+
+```yaml
+- name: Configure OSPF with specific Router ID for each CHR
+  community.routeros.command:
+    commands:
+      - /ip address add address={{ router_id }} interface=lo
+      - /routing ospf instance add disabled=no name=skynet router-id={{ router_id }} redistribute=connected,static
+      - /routing ospf area add disabled=no instance=skynet name=backbone
+      - /routing ospf interface-template add area=backbone cost=100 disabled=no type=ptp interfaces={{ router_int }}
+  vars:
+    router_id: "{{ '1.1.1.1' if ansible_host == '10.0.0.2' else '3.3.3.3' }}"
+    router_int: "{{ 'wg2' if ansible_host == '10.0.0.2' else 'wg0' }}"
+
+- name: OSPF topology data
+  community.routeros.command:
+    commands:
+      - /routing/ospf/neighbor/print
+      - /routing/ospf/interface/print
+      - /routing/ospf/area/print
+      - /routing/ospf/instance/print
+  register: ospf_data
+
+- name: Get full device configuration
+  community.routeros.command:
+    commands:
+      - /export
+  register: full_config
+```
+
+
+Данные об OSPF и конфигу устройства на ходятся в переменных ospf_data и full_config
+
+### <a name="section3.4">Выполнение</a>
+
+<p align="center"><img src="./Work_Img/523000000.png" width=700></p>
+
+<p align="center"><img src="./Work_Img/592000000.png" width=700></p>
+
+### <a name="section3.3">Результат (настроенный ospf между CHR)</a>
+
+* CHR-V1
+<p align="center"><img src="./Work_Img/318000000.png" width=700></p>
+
+* CHR-V2
+<p align="center"><img src="./Work_Img/344000000.png" width=700></p>
+
+<p align="center"><img src="./Work_Img/713000000.png" width=700></p>
+
+<p align="center"><img src="./Work_Img/740000000.png" width=700></p>
+
+<p align="center"><img src="./Work_Img/191000000.png" width=700></p>
+
+
+
+## <a name="section4">Вывод</a> 
+
+В ходе выполнения данной лабораторной работы был настроен OSPF через WireGuard на MikroTik, NTP Client и авторизация с помощью Ansible 
